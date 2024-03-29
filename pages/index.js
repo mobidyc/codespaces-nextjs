@@ -18,13 +18,34 @@ import styled from 'styled-components';
 const EditorContainer = styled.div`
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    margin: 1px;
+    border: 1px solid purple;
+    height: calc(100vh - 4px); //2px for margin + 2 px for border
+`;
+
+const ListContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    border: 1px solid grey;
+    margin: 1px;
 `;
 
 const TextAreasContainer = styled.div`
     display: flex;
     justify-content: space-between;
-    height: 45vh;
+    height: 40vh;
+    border: 1px solid green;
+    padding: 10px;
+    margin: 1px;
+`;
+
+const MarkdownPreviewContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    border: 1px solid black;
+    flex-grow: 1;
+    margin: 1px;
 `;
 
 const TextAreaPlaceHolder = styled.div`
@@ -32,15 +53,15 @@ const TextAreaPlaceHolder = styled.div`
     flex-direction: column;
     height: 100%;
     width: 49%;
-    padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     background-color: #f5f5f5;
+    border: 1px solid orange;
     overflow: auto;
 `;
 
 const TextArea = styled.textarea`
-    height: 100%;
+    height: 98%;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -48,14 +69,11 @@ const TextArea = styled.textarea`
 `;
 
 const MarkdownPreview = styled(ReactMarkdown)`
-    width: 100%;
-    height: 45vh;
     padding: 10px;
+    height: 100%;
     border: 1px solid #ccc;
     border-radius: 4px;
     background-color: #f5f5f5;
-    overflow: auto;
-    position: absolute;
     bottom: 0;
 `;
 
@@ -65,10 +83,14 @@ const Toolbar = styled.div`
     border-bottom: 1px solid #ccc;
 `;
 
-const ToolbarButton = styled.button`
+const BaseToolbarButton = styled.button`
     margin-right: 10px;
     padding: 5px 10px;
     border: none;
+    background-color: #f5f5f5;
+`;
+
+const ToolbarButton = styled(BaseToolbarButton)`
     border-radius: 4px;
     background-color: #f5f5f5;
     cursor: pointer;
