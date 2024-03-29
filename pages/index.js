@@ -132,6 +132,9 @@ const MarkdownEditor = () => {
             </ListContainer>
             <TextAreasContainer>
                 <TextAreaPlaceHolder>
+                    <Toolbar>
+                        <BaseToolbarButton>&nbsp;</BaseToolbarButton>
+                    </Toolbar>
                     <TextArea
                         readOnly
                         value={initialText}
