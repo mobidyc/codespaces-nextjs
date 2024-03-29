@@ -10,10 +10,12 @@ Create a basic markdown editor in Next.js with the following features:
 - Use React markdown npm package 
 - The markdown text and resulting HTML should be saved in the component's state and updated in real time 
 */
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
+import axios from 'axios';
+import useFetchList from '../resources/list_convs';
+
 
 const EditorContainer = styled.div`
     display: flex;
@@ -28,6 +30,8 @@ const ListContainer = styled.div`
     flex-direction: column;
     border: 1px solid grey;
     margin: 1px;
+    height: 20vh;
+    overflow: auto;
 `;
 
 const TextAreasContainer = styled.div`
@@ -100,7 +104,7 @@ const ToolbarButton = styled(BaseToolbarButton)`
     }
 `;
 
-const ListValues = styled.ul`
+const ListConversations = styled.ul`
         list-style-type: none;
     `;
 
@@ -110,11 +114,12 @@ const getInitialText = () => {
 };
 
 
-
 const MarkdownEditor = () => {
     const initialText = getInitialText();
     const [markdown, setMarkdown] = useState(initialText);
-    
+
+    const listValues = useFetchList('http://127.0.0.1:5001/convs');
+
     const handleInputChange = (event) => {
         setMarkdown(event.target.value);
     };
@@ -123,17 +128,40 @@ const MarkdownEditor = () => {
         // Logic to apply the selected format to the markdown text
     };
 
+    const useFetchmsgs = (url) => {
+        const [msgs, setmsgs] = useState([]);
+        const id = 24930;
+    
+        useEffect(() => {
+            const fetchmsgs = async () => {
+                try {
+                    const response = await axios.get('http://127.0.0.1:5001/msg_list/' + id);
+    
+                    const items = response.data.slice(0, 15);
+                    console.log('5 Items:', items);
+    
+                    setmsgs(items);
+                } catch (error) {
+                    console.error('Error fetching list values:', error);
+                }
+            };
+    
+            fetchmsgs();
+        }, [url]);
+    
+        return msgs;
+    }
+
     return (
         <EditorContainer>
             <ListContainer>
-                <ListValues>
-                    <li>val1</li>
-                    <li>val2</li>
-                    <li>val3</li>
-                    <li>val4</li>
-                    <li>val5</li>
-                    <li>val6</li>
-                </ListValues>
+                <ListConversations>
+                    {listValues.map((value, index) => (
+                        <li key={value.id} style={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}>
+                            {value.id}: {value.subject}
+                        </li>
+                    ))}
+                </ListConversations>
             </ListContainer>
             <TextAreasContainer>
                 <TextAreaPlaceHolder>
