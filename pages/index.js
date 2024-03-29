@@ -121,22 +121,17 @@ const MarkdownEditor = () => {
     return (
         <EditorContainer>
             <ListContainer>
-                <li>val1</li>
-                <li>val2</li>
-                <li>val3</li>
-                <li>val4</li>
-                <li>val5</li>
-                <li>val6</li>
-                <li>val7</li>
-                <li>val8</li>
-                <li>val9</li>
-                <li>val10</li>
+                <ListValues>
+                    <li>val1</li>
+                    <li>val2</li>
+                    <li>val3</li>
+                    <li>val4</li>
+                    <li>val5</li>
+                    <li>val6</li>
+                </ListValues>
             </ListContainer>
             <TextAreasContainer>
                 <TextAreaPlaceHolder>
-                    <Toolbar>
-                        <BaseToolbarButton>&nbsp;</BaseToolbarButton>
-                    </Toolbar>
                     <TextArea
                         readOnly
                         value={initialText}
