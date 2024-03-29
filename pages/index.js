@@ -100,20 +100,22 @@ const ToolbarButton = styled(BaseToolbarButton)`
     }
 `;
 
-const ListContainer = styled.ul`
-    list-style-type: none;
-    padding: 0;
-`;
+
+const getInitialText = () => {
+    // Replace this with your actual logic to get the initial text
+    return 'This is the initial text from an external method';
+};
+
 
 
 const MarkdownEditor = () => {
-    const initialText = 'this is the original text';
+    const initialText = getInitialText();
     const [markdown, setMarkdown] = useState(initialText);
-
+    
     const handleInputChange = (event) => {
         setMarkdown(event.target.value);
     };
-
+    
     const handleToolbarClick = (format) => {
         // Logic to apply the selected format to the markdown text
     };
