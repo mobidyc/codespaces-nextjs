@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% set current_edit_text = text if text else initial_text %}
+    <title>Web Display</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/md-editor/latest/mdEditor.min.css">
+    <script>
+        var editor = new mdEditor({
+            element: $("#markdown-editor")[0],
+            tabSize: 2,
+            toolbar: true,
+            toolbarTips: true,
+            status: true,
+        });
+        editor.value("test");
+    </script>
+</head>
+<body>
+    <h1>Web Display</h1>
+
+        <textarea id="initial-text" rows="4" cols="50" readonly style="margin:2px; width: 48%; float: left;">{{ initial_text }}</textarea>
+        
+        <form action="/" method="post">
+            <label for="text"></label><br>
+            
+            <div id="editor-container">
+                <textarea type="text" id="text" name="text" rows="4" cols="50" style="margin:2px; width: 48%; float: left;"
+                id="markdown-editor" >{{ current_edit_text }}
+                </textarea>
+                <textarea type="text" id="text" name="text" rows="4" cols="50" style="margin:2px; width: 48%; float: left;"
+                id="test" >{{ current_edit_text }}
+                </textarea>
+                <div id="preview" style="margin:2px; width: 48%; float: right;"></div>
+            </div>
+
+        <input type="submit" value="Submit" style="float: right;">
+
+    </form>
+    {% if text %}
+    <h2>You submitted:</h2>
+    <p>{{ text }}</p>
+    {% endif %}
+</body>
+</html>
