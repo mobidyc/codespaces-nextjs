@@ -128,7 +128,9 @@ const MarkdownEditor = () => {
                     />
                 </TextAreaPlaceHolder>
             </TextAreasContainer>
-            <MarkdownPreview>{markdown}</MarkdownPreview>
+            <MarkdownPreviewContainer>
+                <MarkdownPreview>{markdown}</MarkdownPreview>
+            </MarkdownPreviewContainer>
         </EditorContainer>
     );
 };
