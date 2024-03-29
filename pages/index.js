@@ -100,6 +100,9 @@ const ToolbarButton = styled(BaseToolbarButton)`
     }
 `;
 
+const ListValues = styled.ul`
+        list-style-type: none;
+    `;
 
 const getInitialText = () => {
     // Replace this with your actual logic to get the initial text
