@@ -9,9 +9,7 @@ const useFetchmsgs = (ticketid) => {
             try {
                 console.log('url: http://127.0.0.1:5001/msg_list/' + ticketid);
                 if(ticketid) {
-                    console.log('AXIOS');         
                     const response = await axios.get('http://127.0.0.1:5001/msg_list/' + ticketid);       
-                    console.log("response: ", response.data)
                     setmsgs(response.data);
                 } else {
                     setmsgs([]);
