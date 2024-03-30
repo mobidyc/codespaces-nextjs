@@ -159,19 +159,28 @@ const MarkdownEditor = () => {
                     <div>SelectedId is: {selectedId}</div>
                     <div>CommentId is: {commentId}</div>
                     {listValues.map((value, index) => (
-                        <li key={value.id} style={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }} onClick={() => setSelectedId(selectedId === value.id ? null : value.id)}>
+                        <li 
+                            key={value.id}
+                            style={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
+                            onClick={() => setSelectedId(value.id)}>
                             {value.id}: {value.subject}
-                            {selectedId && selectedId === value.id && (
-                                <ul onClick={(e) => e.stopPropagation()}>
-                                    {sublistValues.map((subValue, subindex) => (
-                                        <li key={subValue.id} style={{ backgroundColor: subindex % 2 === 0 ? 'green' : 'blue' }} onClick={() => setCommentId(subValue.id)}>
-                                            {subValue.content}
+                            {selectedId === value.id && (
+                                <ul>
+                                    {sublistValues.map((subValue, subIndex) => (
+                                        <li 
+                                            key={subValue.comment_id}
+                                            style={{ backgroundColor: subIndex % 2 === 0 ? 'green' : 'blue' }}
+                                            onClick={(e) => {
+                                                console.log("subValue.comment_id: ", subValue.comment_id);
+                                                e.stopPropagation();
+                                                setCommentId(subValue.comment_id);
+                                            }}>
+                                            {subValue.comment_id}: {subValue.content}
                                         </li>
                                     ))}
                                 </ul>
                             )}
                         </li>
-                        <div>test</div>
                     ))}
                 </ListConversations>
             </ListContainer>
