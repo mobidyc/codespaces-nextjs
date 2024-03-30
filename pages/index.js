@@ -16,6 +16,7 @@ import styled from 'styled-components';
 import axios from 'axios';
 import useFetchList from '../resources/list_convs';
 import useFetchmsgs from '../resources/list_msgs';
+import useFetchmessage from '../resources/get_message';
 
 const EditorContainer = styled.div`
     display: flex;
@@ -112,52 +113,27 @@ const MarkdownEditor = () => {
     
     const listValues = useFetchList('http://127.0.0.1:5001/convs');
     
-    const handleInputChange = (event) => {
-        setMarkdown(event.target.value);
-    };
-    
     const handleToolbarClick = (format) => {
         // Logic to apply the selected format to the markdown text
     };
-
+    
     const [selectedId, setSelectedId] = useState(null);
     const sublistValues = useFetchmsgs(selectedId);
     
-    const useFetchmessage = (commentId) => {
-        console.log("commentId: ", commentId)
-        const [message, setMessage] = useState([]);
-        
-        useEffect(() => {
-            const fetchmessage = async () => {
-                try {
-                    console.log("ID: ", commentId)
-                    const response = await axios.get('http://127.0.0.1:5001/msg/' + commentId);
-                    console.log("response: ", response.data)
-                    setMessage(response.data);
-                } catch (error) {
-                    console.error('Error fetching list values:', error);
-                }
-            };
-            if (commentId) {
-                fetchmessage();
-            } else {
-                setMessage('This is the initial text');
-            }
-        }, [commentId]);
-        
-        return message;
-    }
     const [commentId, setCommentId] = useState(null);
     const initialText = useFetchmessage(commentId);
 
-    const [markdown, setMarkdown] = useState('This is the initial text');
-    
+    const [markdown, setMarkdown] = useState(initialText);
+    useEffect(() => {
+        setMarkdown(initialText);
+    }, [initialText]);
+
     return (
         <EditorContainer>
             <ListContainer>
                 <ListConversations>
-                    <div>SelectedId is: {selectedId}</div>
-                    <div>CommentId is: {commentId}</div>
+                    {/* <div>SelectedId is: {selectedId}</div>
+                    <div>CommentId is: {commentId}</div> */}
                     {listValues.map((value, index) => (
                         <li 
                             key={value.id}
@@ -171,7 +147,6 @@ const MarkdownEditor = () => {
                                             key={subValue.comment_id}
                                             style={{ backgroundColor: subIndex % 2 === 0 ? 'green' : 'blue' }}
                                             onClick={(e) => {
-                                                console.log("subValue.comment_id: ", subValue.comment_id);
                                                 e.stopPropagation();
                                                 setCommentId(subValue.comment_id);
                                             }}>
@@ -190,6 +165,7 @@ const MarkdownEditor = () => {
                         <BaseToolbarButton>&nbsp;</BaseToolbarButton>
                     </Toolbar>
                     <TextArea
+                        name="initialText"
                         readOnly
                         value={initialText}
                     />
@@ -200,8 +176,8 @@ const MarkdownEditor = () => {
                         <ToolbarButton onClick={() => handleToolbarClick('Code')}>Code</ToolbarButton>
                     </Toolbar>
                     <TextArea
+                        name="markdown"
                         value={markdown}
-                        onChange={handleInputChange}
                     />
                 </TextAreaPlaceHolder>
             </TextAreasContainer>
