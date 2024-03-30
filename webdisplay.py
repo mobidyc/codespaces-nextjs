@@ -54,7 +54,8 @@ class GetTickets:
         res = []
         for message in messages:
             msg = message[1].replace('\n', ' ').strip()[:96] + ' ...'
-            res.append({"comment_id": message[0], "content": msg})
+            saved = os.path.exists(self.get_save_filedest(ticket_id, message[0]))
+            res.append({"comment_id": message[0], "content": msg, "saved": saved})
         return res
 
     def get_tickets_conv(self):
