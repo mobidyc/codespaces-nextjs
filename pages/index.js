@@ -107,18 +107,52 @@ const MarkdownEditor = () => {
     const sublistValues = useFetchmsgs(selectedId, textChanged, setTextChanged);
     
     const [commentId, setCommentId] = useState(null);
-    const initialText = useFetchmessage(commentId, textChanged, setTextChanged);
+    const initialText = useFetchmessage(selectedId, commentId, textChanged, setTextChanged);
 
     const [markdown, setMarkdown] = useState(initialText);
     useEffect(() => {
-        setMarkdown(initialText);
+        console.log('initialText USEEZFFECT: ', initialText)
+        if (initialText.saved) {
+            setMarkdown(initialText.saved_text);
+        } else {
+            setMarkdown(initialText.text);
+        }
     }, [initialText]);
 
-    const handleInputChange = () => {
+    const handleInputChange = (event) => {
         console.log('Entering handleInputChange');
         setMarkdown(event.target.value);
         setTextChanged(true);
     };
+
+    const handleToolbarClick = (type) => {
+        switch (type) {
+            case 'Save':
+                console.log('SAVING MESSAGE');
+                useSaveMessage(selectedId, commentId, markdown, setTextChanged);
+                break;
+            case 'Code':
+                setMarkdown('```' + markdown + '```');
+                break;
+            default:
+                break;
+        }
+    };
+
+    const useSaveMessage = (ticket_id, commentId, markdown, setTextChanged) => {
+        const saveMessage = async () => {
+            try {
+                console.log('url: http://127.0.0.1:5001/ticket/' + ticket_id + '/comment_id/' + commentId + '/save');
+                const response = await axios.post('http://127.0.0.1:5001/ticket/' + ticket_id + '/comment_id/' + commentId + '/save', { text: markdown });
+                console.log('response: ', response);
+                setTextChanged(false);
+            } catch (error) {
+                console.error('Error saving message:', error);
+            }
+        }
+        saveMessage();
+    }
+
 
     return (
         <EditorContainer>
@@ -135,7 +169,7 @@ const MarkdownEditor = () => {
                                     {sublistValues.map((subValue, subIndex, textChanged) => (
                                         <li 
                                             key={subValue.comment_id}
-                                            style={{ backgroundColor: subIndex % 2 === 0 ? 'green' : 'blue' }}
+                                            style={{ backgroundColor: subIndex % 2 === 0 ? '#B2DFDB' : '#FFB6C1' }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setCommentId(subValue.comment_id);
@@ -152,18 +186,18 @@ const MarkdownEditor = () => {
             <TextAreasContainer>
                 <TextAreaPlaceHolder>
                     <Toolbar>
-                    <ToolbarButton>Original text:</ToolbarButton>
+                    <ToolbarButton>Original text: {selectedId} / {commentId}</ToolbarButton>
                     </Toolbar>
                     <TextArea
                         style={{ backgroundColor: '#C0C0C0' }}
                         name="initialText"
                         readOnly
-                        value={initialText}
+                        value={initialText.text}
                     />
                 </TextAreaPlaceHolder>
                 <TextAreaPlaceHolder>
                     <Toolbar>
-                        <ToolbarButton onClick={() => handleToolbarClick('header')}>Header</ToolbarButton>
+                        <ToolbarButton onClick={() => handleToolbarClick('Save')}>Save</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Code')}>Code</ToolbarButton>
                     </Toolbar>
                     <TextArea

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const useFetchmessage = (commentId, textChanged, setTextChanged) => {
+const useFetchmessage = (ticket_id, commentId, textChanged, setTextChanged) => {
     const [message, setMessage] = useState('This is the initial text');
+    console.log("ticket_id: ", ticket_id);
     
     useEffect(() => {
         const fetchmessage = async () => {
             try {
-                console.log('url: http://127.0.0.1:5001/msg/' + commentId);
-                const response = await axios.get('http://127.0.0.1:5001/msg/' + commentId);
+                console.log('url: http://127.0.0.1:5001/ticket/' + ticket_id + '/comment_id/' + commentId);
+                const response = await axios.get('http://127.0.0.1:5001/ticket/' + ticket_id + '/comment_id/' + commentId);
                 setMessage(response.data);
             } catch (error) {
                 console.error('Error fetching list values:', error);
