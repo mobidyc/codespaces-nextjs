@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const useFetchmsgs = (ticketid) => {
+const useFetchmsgs = (ticketid, textChanged, setTextChanged) => {
     const [msgs, setmsgs] = useState([]);
     
     useEffect(() => {
@@ -18,6 +18,13 @@ const useFetchmsgs = (ticketid) => {
                 console.error('Error fetching list values:', error);
             }
         };
+        if (textChanged) {
+            const confirmChange = window.confirm('Are you sure you want to leave without saving the message?');
+            if (!confirmChange) {
+                return;
+            }
+            setTextChanged(false);
+        }
         if (ticketid) {
             fetchmsgs();
         }

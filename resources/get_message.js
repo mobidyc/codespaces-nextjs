@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const useFetchmessage = (commentId) => {
+const useFetchmessage = (commentId, textChanged, setTextChanged) => {
     const [message, setMessage] = useState('This is the initial text');
     
     useEffect(() => {
@@ -14,6 +14,13 @@ const useFetchmessage = (commentId) => {
                 console.error('Error fetching list values:', error);
             }
         };
+        if (textChanged) {
+            const confirmChange = window.confirm('Are you sure you want to leave without saving the message?');
+            if (!confirmChange) {
+                return;
+            }
+            setTextChanged(false);
+        }
         if (commentId) {
             fetchmessage();
         } else {

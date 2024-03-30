@@ -38,13 +38,12 @@ const ListContainer = styled.div`
 const TextAreasContainer = styled.div`
     display: flex;
     justify-content: space-between;
-    height: 40vh;
+    height: 35vh;
     border: 1px solid green;
     padding: 10px;
     margin: 1px;
 `;
-
-const MarkdownPreviewContainer = styled.div`
+const TextAreasContainerResult = styled.div`
     display: flex;
     flex-direction: column;
     padding: 10px;
@@ -71,15 +70,6 @@ const TextArea = styled.textarea`
     border: 1px solid #ccc;
     border-radius: 4px;
     resize: none;
-`;
-
-const MarkdownPreview = styled(ReactMarkdown)`
-    padding: 10px;
-    height: 100%;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #f5f5f5;
-    bottom: 0;
 `;
 
 const Toolbar = styled.div`
@@ -110,31 +100,31 @@ const ListConversations = styled.ul`
 `;
 
 const MarkdownEditor = () => {
-    
+    const [textChanged, setTextChanged] = useState(false);
     const listValues = useFetchList('http://127.0.0.1:5001/convs');
     
-    const handleToolbarClick = (format) => {
-        // Logic to apply the selected format to the markdown text
-    };
-    
     const [selectedId, setSelectedId] = useState(null);
-    const sublistValues = useFetchmsgs(selectedId);
+    const sublistValues = useFetchmsgs(selectedId, textChanged, setTextChanged);
     
     const [commentId, setCommentId] = useState(null);
-    const initialText = useFetchmessage(commentId);
+    const initialText = useFetchmessage(commentId, textChanged, setTextChanged);
 
     const [markdown, setMarkdown] = useState(initialText);
     useEffect(() => {
         setMarkdown(initialText);
     }, [initialText]);
 
+    const handleInputChange = () => {
+        console.log('Entering handleInputChange');
+        setMarkdown(event.target.value);
+        setTextChanged(true);
+    };
+
     return (
         <EditorContainer>
             <ListContainer>
                 <ListConversations>
-                    {/* <div>SelectedId is: {selectedId}</div>
-                    <div>CommentId is: {commentId}</div> */}
-                    {listValues.map((value, index) => (
+                    {listValues.map((value, index, textChanged) => (
                         <li 
                             key={value.id}
                             style={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
@@ -142,7 +132,7 @@ const MarkdownEditor = () => {
                             {value.id}: {value.subject}
                             {selectedId === value.id && (
                                 <ul>
-                                    {sublistValues.map((subValue, subIndex) => (
+                                    {sublistValues.map((subValue, subIndex, textChanged) => (
                                         <li 
                                             key={subValue.comment_id}
                                             style={{ backgroundColor: subIndex % 2 === 0 ? 'green' : 'blue' }}
@@ -162,9 +152,10 @@ const MarkdownEditor = () => {
             <TextAreasContainer>
                 <TextAreaPlaceHolder>
                     <Toolbar>
-                        <BaseToolbarButton>&nbsp;</BaseToolbarButton>
+                    <ToolbarButton>Original text:</ToolbarButton>
                     </Toolbar>
                     <TextArea
+                        style={{ backgroundColor: '#C0C0C0' }}
                         name="initialText"
                         readOnly
                         value={initialText}
@@ -178,12 +169,23 @@ const MarkdownEditor = () => {
                     <TextArea
                         name="markdown"
                         value={markdown}
+                        onChange={handleInputChange}
                     />
                 </TextAreaPlaceHolder>
             </TextAreasContainer>
-            <MarkdownPreviewContainer>
-                <MarkdownPreview>{markdown}</MarkdownPreview>
-            </MarkdownPreviewContainer>
+            <TextAreasContainer>
+                <TextAreaPlaceHolder>
+                <Toolbar>
+                <ToolbarButton>Result:</ToolbarButton>
+                </Toolbar>
+                    <TextArea
+                        name="result"
+                        readOnly
+                        value={markdown}
+                        style={{ backgroundColor: '#C0C0C0' }}
+                    />
+                </TextAreaPlaceHolder>
+            </TextAreasContainer>
         </EditorContainer>
     );
 };
