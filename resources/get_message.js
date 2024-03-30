@@ -3,7 +3,6 @@ import axios from 'axios';
 
 const useFetchmessage = (ticket_id, commentId, textChanged, setTextChanged) => {
     const [message, setMessage] = useState('This is the initial text');
-    console.log("ticket_id: ", ticket_id);
     
     useEffect(() => {
         const fetchmessage = async () => {
