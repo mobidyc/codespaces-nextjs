@@ -7,7 +7,7 @@ const useFetchList = (url) => {
     useEffect(() => {
         const fetchList = async () => {
             try {
-                const response = await axios.get(url);
+                const response = await axios.get(url + '/convs');
 
                 setListValues(response.data);
             } catch (error) {

@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const useFetchmsgs = (ticketid, textChanged, setTextChanged) => {
+const useFetchmsgs = (url, ticketid, textChanged, setTextChanged) => {
     const [msgs, setmsgs] = useState([]);
     
     useEffect(() => {
         const fetchmsgs = async () => {
             try {
-                console.log('url: http://127.0.0.1:5001/msg_list/' + ticketid);
+                console.log('url: ' + url + '/msg_list/' + ticketid);
                 if(ticketid) {
-                    const response = await axios.get('http://127.0.0.1:5001/msg_list/' + ticketid);       
+                    const response = await axios.get(url + '/msg_list/' + ticketid);       
                     setmsgs(response.data);
                 } else {
                     setmsgs([]);

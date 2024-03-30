@@ -95,14 +95,15 @@ const ListConversations = styled.ul`
 `;
 
 const MarkdownEditor = () => {
+    const baseUrl = 'http://127.0.0.1:5000';
     const [textChanged, setTextChanged] = useState(false);
-    const listValues = useFetchList('http://127.0.0.1:5001/convs');
+    const listValues = useFetchList(baseUrl);
     
     const [selectedId, setSelectedId] = useState(null);
-    const sublistValues = useFetchmsgs(selectedId, textChanged, setTextChanged);
+    const sublistValues = useFetchmsgs(baseUrl, selectedId, textChanged, setTextChanged);
     
     const [commentId, setCommentId] = useState(null);
-    const initialText = useFetchmessage(selectedId, commentId, textChanged, setTextChanged);
+    const initialText = useFetchmessage(baseUrl, selectedId, commentId, textChanged, setTextChanged);
 
     const [markdown, setMarkdown] = useState(initialText);
     useEffect(() => {
@@ -124,7 +125,7 @@ const MarkdownEditor = () => {
         switch (type) {
             case 'Save':
                 console.log('SAVING MESSAGE');
-                useSaveMessage(selectedId, commentId, markdown, setTextChanged);
+                useSaveMessage(baseUrl, selectedId, commentId, markdown, setTextChanged);
                 break;
             case 'Restore':
                 console.log('RESTORING MESSAGE: ' + selectedId + ' / ' + commentId);
@@ -134,7 +135,7 @@ const MarkdownEditor = () => {
             case 'Delete':
                 console.log('DELETING MESSAGE');
                 setMarkdown('');
-                useSaveMessage(selectedId, commentId, '', setTextChanged);
+                useSaveMessage(baseUrl, selectedId, commentId, '', setTextChanged);
                 setTextChanged(false);
                 break;
             case 'Code':
@@ -164,11 +165,11 @@ const MarkdownEditor = () => {
         }
     };
 
-    const useSaveMessage = (ticket_id, commentId, markdown, setTextChanged) => {
+    const useSaveMessage = (url, ticket_id, commentId, markdown, setTextChanged) => {
         const saveMessage = async () => {
             try {
-                console.log('url: http://127.0.0.1:5001/ticket/' + ticket_id + '/comment_id/' + commentId + '/save');
-                const response = await axios.post('http://127.0.0.1:5001/ticket/' + ticket_id + '/comment_id/' + commentId + '/save', { text: markdown });
+                console.log('url: ' + url + '/ticket/' + ticket_id + '/comment_id/' + commentId + '/save');
+                const response = await axios.post(url + '/ticket/' + ticket_id + '/comment_id/' + commentId + '/save', { text: markdown });
                 console.log('response: ', response);
                 setTextChanged(false);
             } catch (error) {
