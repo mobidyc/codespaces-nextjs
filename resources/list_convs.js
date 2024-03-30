@@ -9,10 +9,7 @@ const useFetchList = (url) => {
             try {
                 const response = await axios.get(url);
 
-                const items = response.data.slice(0, 15);
-                console.log('5 Items:', items);
-
-                setListValues(items);
+                setListValues(response.data);
             } catch (error) {
                 console.error('Error fetching list values:', error);
             }
