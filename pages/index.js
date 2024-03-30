@@ -15,7 +15,7 @@ import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
 import axios from 'axios';
 import useFetchList from '../resources/list_convs';
-
+import useFetchmsgs from '../resources/list_msgs';
 
 const EditorContainer = styled.div`
     display: flex;
@@ -106,20 +106,12 @@ const ToolbarButton = styled(BaseToolbarButton)`
 
 const ListConversations = styled.ul`
         list-style-type: none;
-    `;
-
-const getInitialText = () => {
-    // Replace this with your actual logic to get the initial text
-    return 'This is the initial text from an external method';
-};
-
+`;
 
 const MarkdownEditor = () => {
-    const initialText = getInitialText();
-    const [markdown, setMarkdown] = useState(initialText);
-
+    
     const listValues = useFetchList('http://127.0.0.1:5001/convs');
-
+    
     const handleInputChange = (event) => {
         setMarkdown(event.target.value);
     };
@@ -128,38 +120,58 @@ const MarkdownEditor = () => {
         // Logic to apply the selected format to the markdown text
     };
 
-    const useFetchmsgs = (url) => {
-        const [msgs, setmsgs] = useState([]);
-        const id = 24930;
+    const [selectedId, setSelectedId] = useState(null);
+    const sublistValues = useFetchmsgs(selectedId);
     
+    const useFetchmessage = (commentId) => {
+        console.log("commentId: ", commentId)
+        const [message, setMessage] = useState([]);
+        
         useEffect(() => {
-            const fetchmsgs = async () => {
+            const fetchmessage = async () => {
                 try {
-                    const response = await axios.get('http://127.0.0.1:5001/msg_list/' + id);
-    
-                    const items = response.data.slice(0, 15);
-                    console.log('5 Items:', items);
-    
-                    setmsgs(items);
+                    console.log("ID: ", commentId)
+                    const response = await axios.get('http://127.0.0.1:5001/msg/' + commentId);
+                    console.log("response: ", response.data)
+                    setMessage(response.data);
                 } catch (error) {
                     console.error('Error fetching list values:', error);
                 }
             };
-    
-            fetchmsgs();
-        }, [url]);
-    
-        return msgs;
+            if (commentId) {
+                fetchmessage();
+            } else {
+                setMessage('This is the initial text');
+            }
+        }, [commentId]);
+        
+        return message;
     }
+    const [commentId, setCommentId] = useState(null);
+    const initialText = useFetchmessage(commentId);
 
+    const [markdown, setMarkdown] = useState('This is the initial text');
+    
     return (
         <EditorContainer>
             <ListContainer>
                 <ListConversations>
+                    <div>SelectedId is: {selectedId}</div>
+                    <div>CommentId is: {commentId}</div>
                     {listValues.map((value, index) => (
-                        <li key={value.id} style={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}>
+                        <li key={value.id} style={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }} onClick={() => setSelectedId(selectedId === value.id ? null : value.id)}>
                             {value.id}: {value.subject}
+                            {selectedId && selectedId === value.id && (
+                                <ul onClick={(e) => e.stopPropagation()}>
+                                    {sublistValues.map((subValue, subindex) => (
+                                        <li key={subValue.id} style={{ backgroundColor: subindex % 2 === 0 ? 'green' : 'blue' }} onClick={() => setCommentId(subValue.id)}>
+                                            {subValue.content}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </li>
+                        <div>test</div>
                     ))}
                 </ListConversations>
             </ListContainer>
