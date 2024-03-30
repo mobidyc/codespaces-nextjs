@@ -34,3 +34,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+resources/01.2-zendesk_tickets-markdown.json
+resources/save_dir/*
