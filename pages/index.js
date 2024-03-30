@@ -38,17 +38,9 @@ const ListContainer = styled.div`
 const TextAreasContainer = styled.div`
     display: flex;
     justify-content: space-between;
-    height: 35vh;
+    height: 60vh;
     border: 1px solid green;
     padding: 10px;
-    margin: 1px;
-`;
-const TextAreasContainerResult = styled.div`
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    border: 1px solid black;
-    flex-grow: 1;
     margin: 1px;
 `;
 
@@ -97,6 +89,9 @@ const ToolbarButton = styled(BaseToolbarButton)`
 
 const ListConversations = styled.ul`
         list-style-type: none;
+        height: 98%;
+        padding: 10px;
+        margin: 0;
 `;
 
 const MarkdownEditor = () => {
@@ -131,8 +126,38 @@ const MarkdownEditor = () => {
                 console.log('SAVING MESSAGE');
                 useSaveMessage(selectedId, commentId, markdown, setTextChanged);
                 break;
+            case 'Restore':
+                console.log('RESTORING MESSAGE: ' + selectedId + ' / ' + commentId);
+                setMarkdown(initialText.text);
+                setTextChanged(true);
+                break;
+            case 'Delete':
+                console.log('DELETING MESSAGE');
+                setMarkdown('');
+                useSaveMessage(selectedId, commentId, '', setTextChanged);
+                setTextChanged(false);
+                break;
             case 'Code':
-                setMarkdown('```' + markdown + '```');
+                // Get the textarea element
+                const textarea = document.getElementById('#markdown');
+
+                // Get the start and end positions of the selected text
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+
+                // Get the selected text
+                const selectedText = textarea.value.substring(start, end);
+
+                // Surround the selected text with backticks
+                const newText = selectedText.includes('\n') ? `\n\`\`\`\n${selectedText}\n\`\`\`\n` : `\`${selectedText}\``;
+
+                // Replace the selected text with the new text
+                setMarkdown(textarea.value.substring(0, start) + newText + textarea.value.substring(end));
+
+                // Update the cursor position
+                textarea.selectionStart = start;
+                textarea.selectionEnd = start + newText.length;
+                setTextChanged(true);
                 break;
             default:
                 break;
@@ -162,7 +187,7 @@ const MarkdownEditor = () => {
                         <li 
                             key={value.id}
                             style={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
-                            onClick={() => setSelectedId(value.id)}>
+                            onClick={() => setSelectedId(selectedId === value.id ? null : value.id)}>
                             {value.id}: {value.subject}
                             {selectedId === value.id && (
                                 <ul>
@@ -173,8 +198,17 @@ const MarkdownEditor = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setCommentId(subValue.comment_id);
+                                                e.stopPropagation();
+                                                const previousBackgroundColor = e.target.style.backgroundColor;
+                                                const elements = document.querySelectorAll('li');
+                                                elements.forEach((element) => {
+                                                    if (element.style.backgroundColor === 'yellow') {
+                                                        element.style.backgroundColor = previousBackgroundColor;
+                                                    }
+                                                });
+                                                e.target.style.backgroundColor = 'yellow';
                                             }}>
-                                            {subValue.comment_id}: {subValue.content}
+                                            {subValue.saved && <span style={{ color: 'green' }}>✓ </span>}{subValue.comment_id}: {subValue.content}
                                         </li>
                                     ))}
                                 </ul>
@@ -198,16 +232,19 @@ const MarkdownEditor = () => {
                 <TextAreaPlaceHolder>
                     <Toolbar>
                         <ToolbarButton onClick={() => handleToolbarClick('Save')}>Save</ToolbarButton>
+                        <ToolbarButton onClick={() => handleToolbarClick('Restore')}>Restore</ToolbarButton>
+                        <ToolbarButton onClick={() => handleToolbarClick('Delete')}>Delete</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Code')}>Code</ToolbarButton>
                     </Toolbar>
                     <TextArea
+                        id="#markdown"
                         name="markdown"
                         value={markdown}
                         onChange={handleInputChange}
                     />
                 </TextAreaPlaceHolder>
             </TextAreasContainer>
-            <TextAreasContainer>
+            <TextAreasContainer style={{height: 30 + 'vh'}}>
                 <TextAreaPlaceHolder>
                 <Toolbar>
                 <ToolbarButton>Result:</ToolbarButton>
