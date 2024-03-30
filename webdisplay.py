@@ -33,6 +33,7 @@ class GetTickets:
         messages = messages[messages['comment_id'].notnull()]
         messages['comment_id'] = messages['comment_id'].astype(int)
         messages = messages[['comment_id', 'content']].values.tolist()
+
         res = []
         for message in messages:
             msg = message[1].replace('\n', ' ').strip()[:96] + ' ...'
@@ -64,7 +65,13 @@ def convs():
 
 @app.route('/msg_list/<int:ticket_id>', methods=['GET'])
 def msg_list(ticket_id):
+    print
     comment_ids = a.get_comment_ids_by_ticket_id(ticket_id)
+    return comment_ids
+
+@app.route('/msg/<int:comment_id>', methods=['GET'])
+def msg(comment_id):
+    comment_ids = a.get_msg_by_comment_id(comment_id)
     return comment_ids
 
 if __name__ == '__main__':
