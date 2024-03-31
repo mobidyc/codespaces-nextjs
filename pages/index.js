@@ -14,9 +14,8 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
 import axios from 'axios';
-import useFetchList from '../resources/list_convs';
-import useFetchmsgs from '../resources/list_msgs';
-import useFetchmessage from '../resources/get_message';
+import useFetchTickets from '../resources/fetch_tickets';
+import useFetchmessage from '../resources/fetch_message';
 
 const EditorContainer = styled.div`
     display: flex;
@@ -88,55 +87,51 @@ const ToolbarButton = styled(BaseToolbarButton)`
 `;
 
 const ListConversations = styled.ul`
-        list-style-type: none;
-        height: 98%;
-        padding: 10px;
-        margin: 0;
+list-style-type: none;
+height: 98%;
+padding: 10px;
+margin: 0;
 `;
 
 const MarkdownEditor = () => {
     const baseUrl = 'http://127.0.0.1:5000';
-    const [textChanged, setTextChanged] = useState(false);
-    const listValues = useFetchList(baseUrl);
+    const [textHasChanged, setTextHasChanged] = useState(false);
+    const [selectedTicketId, setSelectedTicketId] = useState(null);
+    const [selectedMessadeId, setSelectedMessageId] = useState(null);
+    const listTickets = useFetchTickets(baseUrl);
+    const initialMessage = useFetchmessage(baseUrl, selectedTicketId, selectedMessadeId, textHasChanged, setTextHasChanged);
     
-    const [selectedId, setSelectedId] = useState(null);
-    const sublistValues = useFetchmsgs(baseUrl, selectedId, textChanged, setTextChanged);
-    
-    const [commentId, setCommentId] = useState(null);
-    const initialText = useFetchmessage(baseUrl, selectedId, commentId, textChanged, setTextChanged);
-
-    const [markdown, setMarkdown] = useState(initialText);
+    const [markdown, setMarkdown] = useState(initialMessage);
     useEffect(() => {
-        console.log('initialText USEEZFFECT: ', initialText)
-        if (initialText.saved) {
-            setMarkdown(initialText.saved_text);
+        if (initialMessage.saved) {
+            setMarkdown(initialMessage.saved_text);
         } else {
-            setMarkdown(initialText.text);
+            setMarkdown(initialMessage.text);
         }
-    }, [initialText]);
+    }, [initialMessage]);
 
     const handleInputChange = (event) => {
         console.log('Entering handleInputChange');
         setMarkdown(event.target.value);
-        setTextChanged(true);
+        setTextHasChanged(true);
     };
-
+                
     const handleToolbarClick = (type) => {
         switch (type) {
             case 'Save':
                 console.log('SAVING MESSAGE');
-                useSaveMessage(baseUrl, selectedId, commentId, markdown, setTextChanged);
+                useSaveMessage(baseUrl, selectedTicketId, selectedMessadeId, markdown, setTextHasChanged);
                 break;
             case 'Restore':
-                console.log('RESTORING MESSAGE: ' + selectedId + ' / ' + commentId);
-                setMarkdown(initialText.text);
-                setTextChanged(true);
+                console.log('RESTORING MESSAGE: ' + selectedTicketId + ' / ' + selectedMessadeId);
+                setMarkdown(initialMessage.text);
+                setTextHasChanged(true);
                 break;
             case 'Delete':
                 console.log('DELETING MESSAGE');
                 setMarkdown('');
-                useSaveMessage(baseUrl, selectedId, commentId, '', setTextChanged);
-                setTextChanged(false);
+                useSaveMessage(baseUrl, selectedTicketId, selectedMessadeId, '', setTextHasChanged);
+                setTextHasChanged(false);
                 break;
             case 'Code':
                 // Get the textarea element
@@ -145,31 +140,31 @@ const MarkdownEditor = () => {
                 // Get the start and end positions of the selected text
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
-
+                
                 // Get the selected text
                 const selectedText = textarea.value.substring(start, end);
-
+                
                 // Surround the selected text with backticks
                 const newText = selectedText.includes('\n') ? `\n\`\`\`\n${selectedText}\n\`\`\`\n` : `\`${selectedText}\``;
-
+                
                 // Replace the selected text with the new text
                 setMarkdown(textarea.value.substring(0, start) + newText + textarea.value.substring(end));
-
+                
                 // Update the cursor position
                 textarea.selectionStart = start;
                 textarea.selectionEnd = start + newText.length;
-                setTextChanged(true);
+                setTextHasChanged(true);
                 break;
             default:
                 break;
         }
     };
-
-    const useSaveMessage = (url, ticket_id, commentId, markdown, setTextChanged) => {
-        const saveMessage = async () => {
+    
+    const useSaveMessage = (url, selectedTicketId, selectedMessadeId, markdown, setTextChanged) => {
+            const saveMessage = async () => {
             try {
-                console.log('url: ' + url + '/ticket/' + ticket_id + '/comment_id/' + commentId + '/save');
-                const response = await axios.post(url + '/ticket/' + ticket_id + '/comment_id/' + commentId + '/save', { text: markdown });
+                console.log('url: ' + url + '/ticket/' + ticket_id + '/' + commentId + '/save');
+                const response = await axios.post(url + '/ticket/' + ticket_id + '/' + commentId + '/save', { text: markdown });
                 console.log('response: ', response);
                 setTextChanged(false);
             } catch (error) {
@@ -178,39 +173,36 @@ const MarkdownEditor = () => {
         }
         saveMessage();
     }
+    
+    const handleTicketClick = (ticketId) => {
+        setSelectedTicketId(ticketId);
+    };
 
 
     return (
         <EditorContainer>
             <ListContainer>
                 <ListConversations>
-                    {listValues.map((value, index, textChanged) => (
-                        <li 
-                            key={value.id}
-                            style={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
-                            onClick={() => setSelectedId(selectedId === value.id ? null : value.id)}>
-                            {value.id}: {value.subject}
-                            {selectedId === value.id && (
+                    {listTickets.map((ticket, ticketidx) => (
+                        <li
+                            style={{ backgroundColor: ticketidx % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
+                            key={ticket.id}
+                            onClick={() => handleTicketClick(selectedTicketId === ticket.id ? null : ticket.id)}
+                        >
+                            {ticket.id} - {ticket.subject}
+                            {ticket.id === selectedTicketId && (
                                 <ul>
-                                    {sublistValues.map((subValue, subIndex, textChanged) => (
+                                    {ticket.messages.map((message, messageidx) => (
                                         <li 
-                                            key={subValue.comment_id}
-                                            style={{ backgroundColor: subIndex % 2 === 0 ? '#B2DFDB' : '#FFB6C1' }}
+                                            key={message.comment_id}
+                                            style={{ backgroundColor: message.comment_id === selectedMessadeId ? 'yellow' : (messageidx % 2 === 0 ? '#B2DFDB' : '#FFB6C1') }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setCommentId(subValue.comment_id);
-                                                e.stopPropagation();
-                                                const previousBackgroundColor = e.target.style.backgroundColor;
-                                                const elements = document.querySelectorAll('li');
-                                                elements.forEach((element) => {
-                                                    if (element.style.backgroundColor === 'yellow') {
-                                                        element.style.backgroundColor = previousBackgroundColor;
-                                                    }
-                                                });
-                                                e.target.style.backgroundColor = 'yellow';
-                                            }}>
-                                            {subValue.saved && <span style={{ color: 'green' }}>✓ </span>}{subValue.comment_id}: {subValue.content}
-                                        </li>
+                                                console.log('Selected message: ' + message.comment_id);
+                                                setSelectedMessageId(message.comment_id);
+                                            }}
+                                        >
+                                            {message.comment_id} - {message.short}</li>
                                     ))}
                                 </ul>
                             )}
@@ -221,13 +213,13 @@ const MarkdownEditor = () => {
             <TextAreasContainer>
                 <TextAreaPlaceHolder>
                     <Toolbar>
-                    <ToolbarButton>Original text: {selectedId} / {commentId}</ToolbarButton>
+                        <ToolbarButton>Original text: {selectedTicketId} / {selectedMessadeId}</ToolbarButton>
                     </Toolbar>
                     <TextArea
                         style={{ backgroundColor: '#C0C0C0' }}
                         name="initialText"
                         readOnly
-                        value={initialText.text}
+                        value={initialMessage.text}
                     />
                 </TextAreaPlaceHolder>
                 <TextAreaPlaceHolder>
@@ -246,7 +238,7 @@ const MarkdownEditor = () => {
                 </TextAreaPlaceHolder>
             </TextAreasContainer>
             <TextAreasContainer style={{height: 30 + 'vh'}}>
-                <TextAreaPlaceHolder>
+            <TextAreaPlaceHolder>
                 <Toolbar>
                 <ToolbarButton>Result:</ToolbarButton>
                 </Toolbar>
@@ -256,6 +248,27 @@ const MarkdownEditor = () => {
                         value={markdown}
                         style={{ backgroundColor: '#C0C0C0' }}
                     />
+                </TextAreaPlaceHolder>
+                <TextAreaPlaceHolder>
+                <Toolbar>
+                <ToolbarButton>Info:</ToolbarButton>
+                </Toolbar>
+                    <div>TicketId: {selectedTicketId}</div>
+                    <div>MessageId: {selectedMessadeId}</div>
+                    {listTickets.map((ticket) => (
+                        ticket.id === selectedTicketId && (
+                            ticket.messages.map((message) => (
+                                message.comment_id === selectedMessadeId && (
+                                    <>
+                                    <div>Short: {message.short}</div>
+                                    <div>Has a saved resource: {initialMessage.saved ? "True" : "False"}</div>
+                                    <div>Need saving: {textHasChanged ? "true" : "False"}</div>
+                                    <div>Is deleted: {initialMessage.saved_text === '' ? "True" : "False"}</div>
+                                    </>
+                                )
+                            ))
+                        )
+                    ))}
                 </TextAreaPlaceHolder>
             </TextAreasContainer>
         </EditorContainer>

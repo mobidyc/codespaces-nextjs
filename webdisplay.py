@@ -1,3 +1,4 @@
+import copy
 from flask import Flask, render_template, request
 import pandas as pd
 from flask_cors import CORS
@@ -13,11 +14,16 @@ class GetTickets:
     save_dir = 'resources/save_dir/'
     def __init__(self   ):
         self.all_tickets = self.get_dataframe()
+        self.tickets = self.get_raw_json()
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
     
     def get_dataframe(self):
         return pd.read_json(self.fname)
+
+    def get_raw_json(self):
+        with open(self.fname, 'r') as file:
+            return json.load(file)
 
     # Function to extract message based on ID
     def extract_message_by_id(self, row, id_num):
@@ -75,13 +81,21 @@ class GetTickets:
             "text": text
         }
         filedest = self.get_save_filedest(ticket_id, comment_id)
-        filedest = self.get_save_filedest(ticket_id, comment_id)
         try:
             with open(filedest, 'w') as file:
                 json.dump(data, file)
         except Exception:
             return False
         return True
+    
+    def get_all_tickets_raw(self):
+        tickets = copy.deepcopy(self.tickets)
+        for ticket in tickets:
+            for message in ticket['messages']:
+                message['short'] = message['content'].replace('\n', ' ').strip()[:96] + ' ...'
+                del message['content']
+
+        return tickets
 
 
 a = GetTickets()
@@ -111,6 +125,26 @@ def get_comment(ticket_id, comment_id):
 
 @app.route('/ticket/<int:ticket_id>/comment_id/<int:comment_id>/save', methods=['POST'])
 def save_comment(ticket_id, comment_id):
+    text = request.json['text']
+    a.save_ticket(ticket_id, comment_id, text)
+    return {"success": True}
+
+@app.route('/tickets', methods=['GET'])
+def all_tickets():
+    return a.get_all_tickets_raw()
+
+@app.route('/ticket/<int:ticket_id>', methods=['GET'])
+def ticket(ticket_id):
+    comment_ids = a.get_comment_ids_by_ticket_id(ticket_id)
+    return comment_ids
+
+@app.route('/ticket/<int:ticket_id>/<int:comment_id>', methods=['GET'])
+def get_message(ticket_id, comment_id):
+    text = a.get_msg_by_comment_id(ticket_id, comment_id)
+    return text
+
+@app.route('/ticket/<int:ticket_id>/<int:comment_id>/save', methods=['POST'])
+def save_message(ticket_id, comment_id):
     text = request.json['text']
     a.save_ticket(ticket_id, comment_id, text)
     return {"success": True}
