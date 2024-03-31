@@ -196,10 +196,6 @@ const MarkdownEditor = () => {
         }
         saveMessage();
     }
-    
-    // const handleTicketClick = (ticketId) => {
-    //     setSelectedTicketId(ticketId);
-    // };
 
     const DeletedIcon = () => {
         return (
@@ -231,7 +227,12 @@ const MarkdownEditor = () => {
                                     return (
                                         <li 
                                             key={message.comment_id}
-                                            style={{ backgroundColor: message.comment_id === selectedMessadeId ? 'yellow' : (messageidx % 2 === 0 ? '#B2DFDB' : '#FFB6C1') }}
+                                            style={{
+                                                backgroundColor: message.comment_id === selectedMessadeId ? 'yellow' :
+                                                    message.deleted ? '#C0C0C0' :
+                                                    message.saved ? '#F5F5F5' :
+                                                    messageidx % 2 === 0 ? '#B2DFDB' : '#FFB6C1'
+                                            }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 console.log('Selected message: ' + message.comment_id);
