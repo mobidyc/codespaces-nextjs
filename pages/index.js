@@ -109,8 +109,9 @@ const MarkdownEditor = () => {
     const listTickets = useFetchTickets(baseUrl);
     const initialMessage = useFetchmessage(baseUrl, selectedMessadeId, textHasChanged, setTextHasChanged);
 
-    const checkChangeSelectedMessadeId = (newid, ticketid, setSelectedMessageId, setSelectedTicketId, textHasChanged, setTextHasChanged) => {
-        if (selectedMessadeId === newid) {
+    const checkChangeSelectedMessadeId = (message, ticketid, setSelectedMessageId, setSelectedTicketId, textHasChanged, setTextHasChanged) => {
+        console.log('checkChangeSelectedMessadeId: ', message);
+        if (selectedMessadeId === message.comment_id) {
             return;
         }
         if (textHasChanged) {
@@ -120,7 +121,7 @@ const MarkdownEditor = () => {
             }
             setTextHasChanged(false);
         }
-        setSelectedMessageId(newid);
+        setSelectedMessageId(message.comment_id);
         setSelectedTicketId(ticketid);
     }
 
@@ -171,7 +172,7 @@ const MarkdownEditor = () => {
                 
                 // Replace the selected text with the new text
                 setMarkdown(textarea.value.substring(0, start) + newText + textarea.value.substring(end));
-                
+
                 // Update the cursor position
                 textarea.selectionStart = start;
                 textarea.selectionEnd = start + newText.length;
@@ -236,7 +237,7 @@ const MarkdownEditor = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 console.log('Selected message: ' + message.comment_id);
-                                                checkChangeSelectedMessadeId(message.comment_id, ticket.id, setSelectedMessageId, setSelectedTicketId, textHasChanged, setTextHasChanged);
+                                                checkChangeSelectedMessadeId(message, ticket.id, setSelectedMessageId, setSelectedTicketId, textHasChanged, setTextHasChanged);
                                             }}
                                         >
                                             {message.deleted === true && <DeletedIcon />}
