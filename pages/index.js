@@ -17,6 +17,14 @@ import axios from 'axios';
 import useFetchTickets from '../resources/fetch_tickets';
 import useFetchmessage from '../resources/fetch_message';
 
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
+import '@fortawesome/fontawesome-free'
+import {library} from '@fortawesome/fontawesome-svg-core'
+import {far} from '@fortawesome/free-regular-svg-icons'
+import {fas} from '@fortawesome/free-solid-svg-icons'
+import {fab} from '@fortawesome/free-brands-svg-icons'
+library.add(far,fas,fab);
+
 const EditorContainer = styled.div`
     display: flex;
     flex-direction: column;
@@ -34,16 +42,16 @@ const ListContainer = styled.div`
     overflow: auto;
 `;
 
-const TextAreasContainer = styled.div`
+const MidContainer = styled.div`
     display: flex;
     justify-content: space-between;
-    height: 60vh;
+    height: 70vh;
     border: 1px solid green;
     padding: 10px;
     margin: 1px;
 `;
 
-const TextAreaPlaceHolder = styled.div`
+const PlaceHolder = styled.div`
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -87,10 +95,10 @@ const ToolbarButton = styled(BaseToolbarButton)`
 `;
 
 const ListConversations = styled.ul`
-list-style-type: none;
-height: 98%;
-padding: 10px;
-margin: 0;
+    list-style-type: none;
+    height: 98%;
+    padding: 10px;
+    margin: 0;
 `;
 
 const MarkdownEditor = () => {
@@ -99,19 +107,33 @@ const MarkdownEditor = () => {
     const [selectedTicketId, setSelectedTicketId] = useState(null);
     const [selectedMessadeId, setSelectedMessageId] = useState(null);
     const listTickets = useFetchTickets(baseUrl);
-    const initialMessage = useFetchmessage(baseUrl, selectedTicketId, selectedMessadeId, textHasChanged, setTextHasChanged);
-    
-    const [markdown, setMarkdown] = useState(initialMessage);
+    const initialMessage = useFetchmessage(baseUrl, selectedMessadeId, textHasChanged, setTextHasChanged);
+
+    const checkChangeSelectedMessadeId = (newid, ticketid, setSelectedMessageId, setSelectedTicketId, textHasChanged, setTextHasChanged) => {
+        if (selectedMessadeId === newid) {
+            return;
+        }
+        if (textHasChanged) {
+            const confirmChange = window.confirm('Are you sure you want to leave without saving the message?');
+            if (!confirmChange) {
+                return;
+            }
+            setTextHasChanged(false);
+        }
+        setSelectedMessageId(newid);
+        setSelectedTicketId(ticketid);
+    }
+
+    const [markdown, setMarkdown] = useState(initialMessage.content);
     useEffect(() => {
-        if (initialMessage.saved) {
+        if (initialMessage.saved === true ) {
             setMarkdown(initialMessage.saved_text);
         } else {
-            setMarkdown(initialMessage.text);
+            setMarkdown(initialMessage.content);
         }
     }, [initialMessage]);
 
     const handleInputChange = (event) => {
-        console.log('Entering handleInputChange');
         setMarkdown(event.target.value);
         setTextHasChanged(true);
     };
@@ -120,17 +142,17 @@ const MarkdownEditor = () => {
         switch (type) {
             case 'Save':
                 console.log('SAVING MESSAGE');
-                useSaveMessage(baseUrl, selectedTicketId, selectedMessadeId, markdown, setTextHasChanged);
+                useSaveMessage(baseUrl, selectedMessadeId, markdown, setTextHasChanged);
                 break;
             case 'Restore':
-                console.log('RESTORING MESSAGE: ' + selectedTicketId + ' / ' + selectedMessadeId);
-                setMarkdown(initialMessage.text);
+                console.log('RESTORING MESSAGE: ' + selectedMessadeId);
+                setMarkdown(initialMessage.content);
                 setTextHasChanged(true);
                 break;
             case 'Delete':
                 console.log('DELETING MESSAGE');
                 setMarkdown('');
-                useSaveMessage(baseUrl, selectedTicketId, selectedMessadeId, '', setTextHasChanged);
+                useSaveMessage(baseUrl, selectedMessadeId, '', setTextHasChanged);
                 setTextHasChanged(false);
                 break;
             case 'Code':
@@ -160,12 +182,13 @@ const MarkdownEditor = () => {
         }
     };
     
-    const useSaveMessage = (url, selectedTicketId, selectedMessadeId, markdown, setTextChanged) => {
+    const useSaveMessage = (url, selectedMessadeId, markdown, setTextChanged) => {
             const saveMessage = async () => {
             try {
-                console.log('url: ' + url + '/ticket/' + ticket_id + '/' + commentId + '/save');
-                const response = await axios.post(url + '/ticket/' + ticket_id + '/' + commentId + '/save', { text: markdown });
-                console.log('response: ', response);
+                console.log('saveMessage url: ' + url + '/message/' + selectedMessadeId + '/save');
+                console.log('saveMessage markdown: ' + markdown);
+                const response = await axios.post(url + '/message/' + selectedMessadeId + '/save', { text: markdown });
+                console.log('saveMessage response: ', response);
                 setTextChanged(false);
             } catch (error) {
                 console.error('Error saving message:', error);
@@ -174,55 +197,91 @@ const MarkdownEditor = () => {
         saveMessage();
     }
     
-    const handleTicketClick = (ticketId) => {
-        setSelectedTicketId(ticketId);
+    // const handleTicketClick = (ticketId) => {
+    //     setSelectedTicketId(ticketId);
+    // };
+
+    const DeletedIcon = () => {
+        return (
+            <><FontAwesomeIcon icon="fa-solid fa-trash-can" style={{ color: 'green' }} /><span> </span></>
+        );
+    };
+    const SavedIcon = () => {
+        return (
+            <><FontAwesomeIcon icon="fa-solid fa-check-double" style={{ color: 'green' }} /><span> </span></>
+        );
     };
 
-
-    return (
-        <EditorContainer>
-            <ListContainer>
-                <ListConversations>
-                    {listTickets.map((ticket, ticketidx) => (
-                        <li
-                            style={{ backgroundColor: ticketidx % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
-                            key={ticket.id}
-                            onClick={() => handleTicketClick(selectedTicketId === ticket.id ? null : ticket.id)}
-                        >
-                            {ticket.id} - {ticket.subject}
-                            {ticket.id === selectedTicketId && (
-                                <ul>
-                                    {ticket.messages.map((message, messageidx) => (
+    const Conversations = () => {
+        return (
+            <ListConversations>
+                {listTickets.map((ticket, ticketidx) => (
+                    <li
+                        style={{ backgroundColor: ticketidx % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
+                        key={ticket.id}
+                        // onClick={() => handleTicketClick(ticket.id)}
+                    >
+                        {ticket.id} - {ticket.subject}
+                        {(
+                            <ul>
+                                {ticket.messages.map((message, messageidx) => {
+                                    if (!message.comment_id) {
+                                        return null; // Skip the element if comment_id does not exist
+                                    }
+                                    return (
                                         <li 
                                             key={message.comment_id}
                                             style={{ backgroundColor: message.comment_id === selectedMessadeId ? 'yellow' : (messageidx % 2 === 0 ? '#B2DFDB' : '#FFB6C1') }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 console.log('Selected message: ' + message.comment_id);
-                                                setSelectedMessageId(message.comment_id);
+                                                checkChangeSelectedMessadeId(message.comment_id, ticket.id, setSelectedMessageId, setSelectedTicketId, textHasChanged, setTextHasChanged);
                                             }}
                                         >
-                                        {message.comment_id} - {message.short}</li>
-                                    ))}
-                                </ul>
-                            )}
-                        </li>
+                                            {message.deleted === true && <DeletedIcon />}
+                                            {message.deleted !== true && message.saved === true && <SavedIcon />}
+                                            {message.comment_id} - {message.short}
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                        )}
+                    </li>
+                ))}
+            </ListConversations>
+        );
+};
+
+    return (
+        <EditorContainer>
+            <MidContainer style={{height: 20 + 'vh'}}>
+            <PlaceHolder style={{ width: "100%" }}>
+                <Toolbar>
+                    <ToolbarButton>Info:</ToolbarButton>
+                </Toolbar>
+                    <div>TicketId: {selectedTicketId}</div>
+                    <div>MessageId: {selectedMessadeId}</div>
+                    {listTickets.map((ticket) => (
+                        ticket.id === selectedTicketId && (
+                            ticket.messages.map((message) => (
+                                message.comment_id === selectedMessadeId && (
+                                    <>
+                                    <div>Short: {message.short}</div>
+                                    <div>Has a saved resource: {initialMessage.saved ? "True" : "False"}</div>
+                                    <div>Need saving: {textHasChanged ? "True" : "False"}</div>
+                                    <div>Is deleted: {initialMessage.saved_text ? "True" : "False"}</div>
+                                    </>
+                                )
+                            ))
+                        )
                     ))}
-                </ListConversations>
-            </ListContainer>
-            <TextAreasContainer>
-                <TextAreaPlaceHolder>
-                    <Toolbar>
-                        <ToolbarButton>Original text: {selectedTicketId} / {selectedMessadeId}</ToolbarButton>
-                    </Toolbar>
-                    <TextArea
-                        style={{ backgroundColor: '#C0C0C0' }}
-                        name="initialText"
-                        readOnly
-                        value={initialMessage.text}
-                    />
-                </TextAreaPlaceHolder>
-                <TextAreaPlaceHolder>
+                </PlaceHolder>
+            </MidContainer>
+            <MidContainer>
+                <PlaceHolder style={{ width: "30%" }}>
+                    <Conversations/>
+                </PlaceHolder>
+                <PlaceHolder>
                     <Toolbar>
                         <ToolbarButton onClick={() => handleToolbarClick('Save')}>Save</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Restore')}>Restore</ToolbarButton>
@@ -235,42 +294,19 @@ const MarkdownEditor = () => {
                         value={markdown}
                         onChange={handleInputChange}
                     />
-                </TextAreaPlaceHolder>
-            </TextAreasContainer>
-            <TextAreasContainer style={{height: 30 + 'vh'}}>
-            <TextAreaPlaceHolder>
-                <Toolbar>
-                <ToolbarButton>Result:</ToolbarButton>
-                </Toolbar>
+                </PlaceHolder>
+                <PlaceHolder>
+                    <Toolbar>
+                        <ToolbarButton>Original text: {selectedTicketId} / {selectedMessadeId}</ToolbarButton>
+                    </Toolbar>
                     <TextArea
-                        name="result"
-                        readOnly
-                        value={markdown}
                         style={{ backgroundColor: '#C0C0C0' }}
+                        name="initialText"
+                        readOnly
+                        value={initialMessage.content}
                     />
-                </TextAreaPlaceHolder>
-                <TextAreaPlaceHolder>
-                <Toolbar>
-                <ToolbarButton>Info:</ToolbarButton>
-                </Toolbar>
-                    <div>TicketId: {selectedTicketId}</div>
-                    <div>MessageId: {selectedMessadeId}</div>
-                    {listTickets.map((ticket) => (
-                        ticket.id === selectedTicketId && (
-                            ticket.messages.map((message) => (
-                                message.comment_id === selectedMessadeId && (
-                                    <>
-                                    <div>Short: {message.short}</div>
-                                    <div>Has a saved resource: {initialMessage.saved ? "True" : "False"}</div>
-                                    <div>Need saving: {textHasChanged ? "true" : "False"}</div>
-                                    <div>Is deleted: {initialMessage.saved_text === '' ? "True" : "False"}</div>
-                                    </>
-                                )
-                            ))
-                        )
-                    ))}
-                </TextAreaPlaceHolder>
-            </TextAreasContainer>
+                </PlaceHolder>
+            </MidContainer>
         </EditorContainer>
     );
 };
