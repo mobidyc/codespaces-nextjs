@@ -17,7 +17,7 @@ const useFetchTickets = (url) => {
         };
 
         fetchList();
-    }, [url]);
+    }, []);
 
     return listTickets;
 };
