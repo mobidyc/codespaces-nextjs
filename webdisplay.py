@@ -42,6 +42,7 @@ class GetTickets:
             "text": msg[msg.notnull()].values[0],
             "saved": False,
             "saved_text": None
+            "comment_id": comment_id
         }
         if os.path.exists(self.get_save_filedest(ticket_id, comment_id)):
             message["saved"] = True

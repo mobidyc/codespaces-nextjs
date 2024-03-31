@@ -202,7 +202,7 @@ const MarkdownEditor = () => {
                                                 setSelectedMessageId(message.comment_id);
                                             }}
                                         >
-                                            {message.comment_id} - {message.short}</li>
+                                        {message.comment_id} - {message.short}</li>
                                     ))}
                                 </ul>
                             )}
