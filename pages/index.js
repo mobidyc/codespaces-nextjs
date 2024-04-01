@@ -105,13 +105,13 @@ const MarkdownEditor = () => {
     const baseUrl = 'http://127.0.0.1:5000';
     const [textHasChanged, setTextHasChanged] = useState(false);
     const [selectedTicketId, setSelectedTicketId] = useState(null);
-    const [selectedMessadeId, setSelectedMessageId] = useState(null);
+    const [selectedMessage, setSelectedMessage] = useState({comment_id: null});
     const listTickets = useFetchTickets(baseUrl);
-    const initialMessage = useFetchmessage(baseUrl, selectedMessadeId, textHasChanged, setTextHasChanged);
+    const initialMessage = useFetchmessage(baseUrl, selectedMessage);
 
-    const checkChangeSelectedMessadeId = (message, ticketid, setSelectedMessageId, setSelectedTicketId, textHasChanged, setTextHasChanged) => {
+    const checkChangeSelectedMessadeId = (message, ticketid, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged) => {
         console.log('checkChangeSelectedMessadeId: ', message);
-        if (selectedMessadeId === message.comment_id) {
+        if (selectedMessage.comment_id === message.comment_id) {
             return;
         }
         if (textHasChanged) {
@@ -121,7 +121,7 @@ const MarkdownEditor = () => {
             }
             setTextHasChanged(false);
         }
-        setSelectedMessageId(message.comment_id);
+        setSelectedMessage(message);
         setSelectedTicketId(ticketid);
     }
 
@@ -143,18 +143,17 @@ const MarkdownEditor = () => {
         switch (type) {
             case 'Save':
                 console.log('SAVING MESSAGE');
-                useSaveMessage(baseUrl, selectedMessadeId, markdown, setTextHasChanged);
+                useSaveMessage(baseUrl, selectedMessage, markdown, setTextHasChanged, setSelectedMessage);
                 break;
             case 'Restore':
-                console.log('RESTORING MESSAGE: ' + selectedMessadeId);
+                console.log('RESTORING MESSAGE: ' + selectedMessage.comment_id);
                 setMarkdown(initialMessage.content);
                 setTextHasChanged(true);
                 break;
             case 'Delete':
                 console.log('DELETING MESSAGE');
                 setMarkdown('');
-                useSaveMessage(baseUrl, selectedMessadeId, '', setTextHasChanged);
-                setTextHasChanged(false);
+                useSaveMessage(baseUrl, selectedMessage, '', setTextHasChanged, setSelectedMessage);
                 break;
             case 'Code':
                 // Get the textarea element
@@ -167,8 +166,11 @@ const MarkdownEditor = () => {
                 // Get the selected text
                 const selectedText = textarea.value.substring(start, end);
                 
+                // Remove existing backticks from the selected text
+                const cleanedText = selectedText.replace(/```/g, '');
+
                 // Surround the selected text with backticks
-                const newText = selectedText.includes('\n') ? `\n\`\`\`\n${selectedText}\n\`\`\`\n` : `\`${selectedText}\``;
+                const newText = cleanedText.includes('\n') ? `\n\`\`\`\n${cleanedText}\n\`\`\`\n` : `\`${cleanedText}\``;
                 
                 // Replace the selected text with the new text
                 setMarkdown(textarea.value.substring(0, start) + newText + textarea.value.substring(end));
@@ -182,14 +184,21 @@ const MarkdownEditor = () => {
                 break;
         }
     };
-    
-    const useSaveMessage = (url, selectedMessadeId, markdown, setTextChanged) => {
+
+    const useSaveMessage = (url, selectedMessage, markdown, setTextChanged, setSelectedMessage) => {
             const saveMessage = async () => {
             try {
-                console.log('saveMessage url: ' + url + '/message/' + selectedMessadeId + '/save');
+                console.log('saveMessage url: ' + url + '/message/' + selectedMessage.comment_id + '/save');
                 console.log('saveMessage markdown: ' + markdown);
-                const response = await axios.post(url + '/message/' + selectedMessadeId + '/save', { text: markdown });
+                const response = await axios.post(url + '/message/' + selectedMessage.comment_id + '/save', { text: markdown });
                 console.log('saveMessage response: ', response);
+                selectedMessage.saved = true;
+                if(markdown === '') {
+                    selectedMessage.deleted = true;
+                } else {
+                    selectedMessage.deleted = false;
+                }
+                setSelectedMessage(selectedMessage);
                 setTextChanged(false);
             } catch (error) {
                 console.error('Error saving message:', error);
@@ -229,20 +238,22 @@ const MarkdownEditor = () => {
                                         <li 
                                             key={message.comment_id}
                                             style={{
-                                                backgroundColor: message.comment_id === selectedMessadeId ? 'yellow' :
+                                                backgroundColor: message.comment_id === selectedMessage.comment_id ? 'yellow' :
                                                     message.deleted ? '#C0C0C0' :
                                                     message.saved ? '#F5F5F5' :
-                                                    messageidx % 2 === 0 ? '#B2DFDB' : '#FFB6C1'
+                                                    message.role === 'user' ? '#FFB6C1' :
+                                                    message.role === 'assistant' ? '#B2DFDB' :
+                                                    'purple'
                                             }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 console.log('Selected message: ' + message.comment_id);
-                                                checkChangeSelectedMessadeId(message, ticket.id, setSelectedMessageId, setSelectedTicketId, textHasChanged, setTextHasChanged);
+                                                checkChangeSelectedMessadeId(message, ticket.id, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged);
                                             }}
                                         >
                                             {message.deleted === true && <DeletedIcon />}
                                             {message.deleted !== true && message.saved === true && <SavedIcon />}
-                                            {message.comment_id} - {message.short}
+                                            {message.comment_id} - {message.role} - {message.short}
                                         </li>
                                     )
                                 })}
@@ -262,11 +273,11 @@ const MarkdownEditor = () => {
                     <ToolbarButton>Info:</ToolbarButton>
                 </Toolbar>
                     <div>TicketId: {selectedTicketId}</div>
-                    <div>MessageId: {selectedMessadeId}</div>
+                    <div>MessageId: {selectedMessage.comment_id}</div>
                     {listTickets.map((ticket) => (
                         ticket.id === selectedTicketId && (
                             ticket.messages.map((message) => (
-                                message.comment_id === selectedMessadeId && (
+                                message.comment_id === selectedMessage.comment_id && (
                                     <>
                                     <div>Short: {message.short}</div>
                                     <div>Has a saved resource: {initialMessage.saved ? "True" : "False"}</div>
@@ -295,11 +306,17 @@ const MarkdownEditor = () => {
                         name="markdown"
                         value={markdown}
                         onChange={handleInputChange}
+                        onKeyDown={(e) => {
+                            if (e.ctrlKey && e.key === 's') {
+                                e.preventDefault();
+                                handleToolbarClick('Save');
+                            }
+                        }}
                     />
                 </PlaceHolder>
                 <PlaceHolder>
                     <Toolbar>
-                        <ToolbarButton>Original text: {selectedTicketId} / {selectedMessadeId}</ToolbarButton>
+                        <ToolbarButton>Original text: {selectedTicketId} / {selectedMessage.comment_id}</ToolbarButton>
                     </Toolbar>
                     <TextArea
                         style={{ backgroundColor: '#C0C0C0' }}
