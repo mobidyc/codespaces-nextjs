@@ -77,9 +77,9 @@ class GetTickets:
         if not original:
             print("Original Message not found")
             return False
-        if original['content'] == text:
-            print("No changes")
-            return False
+        # if original['content'] == text:
+        #     print("No changes")
+        #     return False
         
         filedest = self.get_save_filedest(ticket_id, comment_id)
         try:
@@ -102,7 +102,7 @@ class GetTickets:
         tickets = copy.deepcopy(self.tickets)
         for ticket in tickets:
             for message in ticket['messages']:
-                message['short'] = message['content'].replace('\n', ' ').strip()[:96] + ' ...'
+                message['short'] = message['content'].replace('\n', ' ').strip()[:30] + ' ...'
                 del message['content']
 
         return tickets
