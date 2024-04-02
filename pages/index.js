@@ -101,6 +101,13 @@ const ListConversations = styled.ul`
     margin: 0;
 `;
 
+const Ticket = styled.li`
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+cursor: pointer;
+`
+
 const MarkdownEditor = () => {
     const baseUrl = 'http://127.0.0.1:5000';
     const [textHasChanged, setTextHasChanged] = useState(false);
@@ -108,8 +115,7 @@ const MarkdownEditor = () => {
     const [selectedMessage, setSelectedMessage] = useState({comment_id: null});
     const listTickets = useFetchTickets(baseUrl);
     const initialMessage = useFetchmessage(baseUrl, selectedMessage);
-
-    const checkChangeSelectedMessadeId = (message, ticketid, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged) => {
+    const checkChangeSelectedMessadeId = (message, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged) => {
         console.log('checkChangeSelectedMessadeId: ', message);
         if (selectedMessage.comment_id === message.comment_id) {
             return;
@@ -121,8 +127,25 @@ const MarkdownEditor = () => {
             }
             setTextHasChanged(false);
         }
+        console.log("changing selected message from checkChangeSelectedMessadeId to: ", message.comment_id)
         setSelectedMessage(message);
-        setSelectedTicketId(ticketid);
+        setSelectedTicketId(message.ticketid);
+    }
+
+    const get_next_message = (selectedMessage, listTickets) => {
+        let next_comment_id = null;
+        let found = false;
+        for (let ticket of listTickets) {
+            for (let message of ticket.messages) {
+                if (found) {
+                    return message;
+                }
+                if (message.comment_id === selectedMessage.comment_id) {
+                    found = true;
+                }
+            }
+        }
+        return null;
     }
 
     const [markdown, setMarkdown] = useState(initialMessage.content);
@@ -140,20 +163,25 @@ const MarkdownEditor = () => {
     };
                 
     const handleToolbarClick = (type) => {
+        var nextmsg = selectedMessage;
         switch (type) {
             case 'Save':
-                console.log('SAVING MESSAGE');
                 useSaveMessage(baseUrl, selectedMessage, markdown, setTextHasChanged, setSelectedMessage);
                 break;
             case 'Restore':
-                console.log('RESTORING MESSAGE: ' + selectedMessage.comment_id);
                 setMarkdown(initialMessage.content);
                 setTextHasChanged(true);
                 break;
             case 'Delete':
-                console.log('DELETING MESSAGE');
                 setMarkdown('');
-                useSaveMessage(baseUrl, selectedMessage, '', setTextHasChanged, setSelectedMessage);
+                if (useSaveMessage(baseUrl, selectedMessage, '', setTextHasChanged, setSelectedMessage)) {
+                    nextmsg = get_next_message(selectedMessage, listTickets);
+                    checkChangeSelectedMessadeId(nextmsg, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged);
+                }
+                break;
+            case 'Next':
+                nextmsg = get_next_message(selectedMessage, listTickets);
+                checkChangeSelectedMessadeId(nextmsg, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged);
                 break;
             case 'Code':
                 // Get the textarea element
@@ -167,7 +195,7 @@ const MarkdownEditor = () => {
                 const selectedText = textarea.value.substring(start, end);
                 
                 // Remove existing backticks from the selected text
-                const cleanedText = selectedText.replace(/```/g, '');
+                const cleanedText = selectedText.replace(/`/g, '');
 
                 // Surround the selected text with backticks
                 const newText = cleanedText.includes('\n') ? `\n\`\`\`\n${cleanedText}\n\`\`\`\n` : `\`${cleanedText}\``;
@@ -185,26 +213,27 @@ const MarkdownEditor = () => {
         }
     };
 
-    const useSaveMessage = (url, selectedMessage, markdown, setTextChanged, setSelectedMessage) => {
-            const saveMessage = async () => {
+    const useSaveMessage = (url, selectedMessage, markdown, setTextHasChanged, setSelectedMessage) => {
+        const saveMessage = async () => {
             try {
                 console.log('saveMessage url: ' + url + '/message/' + selectedMessage.comment_id + '/save');
-                console.log('saveMessage markdown: ' + markdown);
                 const response = await axios.post(url + '/message/' + selectedMessage.comment_id + '/save', { text: markdown });
-                console.log('saveMessage response: ', response);
                 selectedMessage.saved = true;
                 if(markdown === '') {
                     selectedMessage.deleted = true;
                 } else {
                     selectedMessage.deleted = false;
                 }
-                setSelectedMessage(selectedMessage);
-                setTextChanged(false);
+                // setSelectedMessage(selectedMessage);
+                setTextHasChanged(false);
             } catch (error) {
+                alert('Error saving message: ' + error.message);
                 console.error('Error saving message:', error);
+                return false;
             }
         }
         saveMessage();
+        return true;
     }
 
     const DeletedIcon = () => {
@@ -222,7 +251,7 @@ const MarkdownEditor = () => {
         return (
             <ListConversations>
                 {listTickets.map((ticket, ticketidx) => (
-                    <li
+                    <Ticket
                         style={{ backgroundColor: ticketidx % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
                         key={ticket.id}
                         // onClick={() => handleTicketClick(ticket.id)}
@@ -231,11 +260,12 @@ const MarkdownEditor = () => {
                         {(
                             <ul>
                                 {ticket.messages.map((message, messageidx) => {
+                                    message.ticketid = ticket.id;
                                     if (!message.comment_id) {
                                         return null; // Skip the element if comment_id does not exist
                                     }
                                     return (
-                                        <li 
+                                        <Ticket 
                                             key={message.comment_id}
                                             style={{
                                                 backgroundColor: message.comment_id === selectedMessage.comment_id ? 'yellow' :
@@ -247,19 +277,18 @@ const MarkdownEditor = () => {
                                             }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                console.log('Selected message: ' + message.comment_id);
-                                                checkChangeSelectedMessadeId(message, ticket.id, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged);
+                                                checkChangeSelectedMessadeId(message, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged);
                                             }}
                                         >
                                             {message.deleted === true && <DeletedIcon />}
                                             {message.deleted !== true && message.saved === true && <SavedIcon />}
                                             {message.comment_id} - {message.role} - {message.short}
-                                        </li>
+                                        </Ticket>
                                     )
                                 })}
                             </ul>
                         )}
-                    </li>
+                    </Ticket>
                 ))}
             </ListConversations>
         );
@@ -296,10 +325,12 @@ const MarkdownEditor = () => {
                 </PlaceHolder>
                 <PlaceHolder>
                     <Toolbar>
+                        <ToolbarButton onClick={() => handleToolbarClick('Next')}>Next</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Save')}>Save</ToolbarButton>
-                        <ToolbarButton onClick={() => handleToolbarClick('Restore')}>Restore</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Delete')}>Delete</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Code')}>Code</ToolbarButton>
+                        <ToolbarButton onClick={() => handleToolbarClick('Restore')}>Restore</ToolbarButton>
+                        <ToolbarButton onClick={() => handleToolbarClick('Next')}>Next</ToolbarButton>
                     </Toolbar>
                     <TextArea
                         id="#markdown"
