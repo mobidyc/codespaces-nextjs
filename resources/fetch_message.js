@@ -6,7 +6,6 @@ const useFetchmessage = (url, selectedMessage) => {
     useEffect(() => {
         const fetchmessage = async () => {
             try {
-                console.log('url: ' + url + '/message/' + selectedMessage.comment_id);
                 const response = await axios.get(url + '/message/' + selectedMessage.comment_id);
                 setMessage(response.data);
             } catch (error) {
