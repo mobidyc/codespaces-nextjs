@@ -13,6 +13,7 @@ class GetTickets:
     save_dir = 'resources/save_dir/'
     def __init__(self   ):
         self.tickets = self.get_raw_json()
+        self.sort_tickets()
         self.check_save_exists()
 
     def get_raw_json(self):
@@ -31,6 +32,10 @@ class GetTickets:
                 message['deleted'] = "saved_text" in saved_msg and saved_msg['saved_text'] == ''
 
         return self.tickets
+    
+    def sort_tickets(self):
+        # order by ticket id
+        self.tickets.sort(key=lambda x: x['id'])
     
     def get_save_filedest(self, ticket_id, comment_id):
         return os.path.join(self.save_dir, f"{str(ticket_id)}-{str(comment_id)}.json")
@@ -106,7 +111,6 @@ class GetTickets:
                 del message['content']
 
         return tickets
-
 
 a = GetTickets()
 
