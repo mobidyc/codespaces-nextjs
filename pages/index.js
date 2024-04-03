@@ -88,6 +88,7 @@ const ToolbarButton = styled(BaseToolbarButton)`
     border-radius: 4px;
     background-color: #f5f5f5;
     cursor: pointer;
+    height: 40px;
 
     &:hover {
         background-color: #e0e0e0;
@@ -113,8 +114,10 @@ const MarkdownEditor = () => {
     const [textHasChanged, setTextHasChanged] = useState(false);
     const [selectedTicketId, setSelectedTicketId] = useState(null);
     const [selectedMessage, setSelectedMessage] = useState({comment_id: null});
-    const listTickets = useFetchTickets(baseUrl);
+    const [filter_tickets_saved, setFilter_tickets_saved] = useState(false);
+    const listTickets = useFetchTickets(baseUrl, filter_tickets_saved);
     const initialMessage = useFetchmessage(baseUrl, selectedMessage);
+    
     const checkChangeSelectedMessadeId = (message, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged) => {
         console.log('checkChangeSelectedMessadeId: ', message);
         if (selectedMessage.comment_id === message.comment_id) {
@@ -137,6 +140,9 @@ const MarkdownEditor = () => {
         let found = false;
         for (let ticket of listTickets) {
             for (let message of ticket.messages) {
+                if(!message.comment_id) {
+                    continue;
+                }
                 if (found) {
                     return message;
                 }
@@ -166,7 +172,13 @@ const MarkdownEditor = () => {
         var nextmsg = selectedMessage;
         switch (type) {
             case 'Save':
-                useSaveMessage(baseUrl, selectedMessage, markdown, setTextHasChanged, setSelectedMessage);
+                useSaveMessage(baseUrl, selectedMessage, markdown, setTextHasChanged);
+                break;
+            case 'SaveNext':
+                if (useSaveMessage(baseUrl, selectedMessage, markdown, setTextHasChanged)) {
+                    nextmsg = get_next_message(selectedMessage, listTickets);
+                    checkChangeSelectedMessadeId(nextmsg, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged);
+                }
                 break;
             case 'Restore':
                 setMarkdown(initialMessage.content);
@@ -174,10 +186,37 @@ const MarkdownEditor = () => {
                 break;
             case 'Delete':
                 setMarkdown('');
-                if (useSaveMessage(baseUrl, selectedMessage, '', setTextHasChanged, setSelectedMessage)) {
+                if (useSaveMessage(baseUrl, selectedMessage, '', setTextHasChanged)) {
                     nextmsg = get_next_message(selectedMessage, listTickets);
                     checkChangeSelectedMessadeId(nextmsg, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged);
                 }
+                break;
+            case 'rmpol':
+                // remove any character after the string "Regards" from markdown
+                var tmp_markdown = markdown;
+                const idx = tmp_markdown.indexOf('Regards');
+                if (idx !== -1) {
+                    tmp_markdown = tmp_markdown.substring(0, idx + 7);
+                    setTextHasChanged(true);
+                }
+                //  from markdown, on the first line, remove any character between "hi" and ","
+                const idx2 = tmp_markdown.toLowerCase().indexOf('hi');
+                if (idx2 !== -1) {
+                    const idx3 = tmp_markdown.indexOf(',', idx2);
+                    if (idx3 !== -1) {
+                        tmp_markdown = tmp_markdown.substring(0, idx2 + 2) + tmp_markdown.substring(idx3);
+                        setTextHasChanged(true);
+                    }
+                }
+                const idx4 = tmp_markdown.toLowerCase().indexOf('hello');
+                if (idx4 !== -1) {
+                    const idx5 = tmp_markdown.indexOf(',', idx4);
+                    if (idx4 !== -1) {
+                        tmp_markdown = tmp_markdown.substring(0, idx4 + 5) + tmp_markdown.substring(idx5);
+                        setTextHasChanged(true);
+                    }
+                }
+                setMarkdown(tmp_markdown);
                 break;
             case 'Next':
                 nextmsg = get_next_message(selectedMessage, listTickets);
@@ -213,7 +252,7 @@ const MarkdownEditor = () => {
         }
     };
 
-    const useSaveMessage = (url, selectedMessage, markdown, setTextHasChanged, setSelectedMessage) => {
+    const useSaveMessage = (url, selectedMessage, markdown, setTextHasChanged) => {
         const saveMessage = async () => {
             try {
                 console.log('saveMessage url: ' + url + '/message/' + selectedMessage.comment_id + '/save');
@@ -224,7 +263,6 @@ const MarkdownEditor = () => {
                 } else {
                     selectedMessage.deleted = false;
                 }
-                // setSelectedMessage(selectedMessage);
                 setTextHasChanged(false);
             } catch (error) {
                 alert('Error saving message: ' + error.message);
@@ -250,46 +288,46 @@ const MarkdownEditor = () => {
     const Conversations = () => {
         return (
             <ListConversations>
-                {listTickets.map((ticket, ticketidx) => (
-                    <Ticket
-                        style={{ backgroundColor: ticketidx % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
-                        key={ticket.id}
-                        // onClick={() => handleTicketClick(ticket.id)}
-                    >
-                        {ticket.id} - {ticket.subject}
-                        {(
-                            <ul>
-                                {ticket.messages.map((message, messageidx) => {
-                                    message.ticketid = ticket.id;
-                                    if (!message.comment_id) {
-                                        return null; // Skip the element if comment_id does not exist
-                                    }
-                                    return (
-                                        <Ticket 
-                                            key={message.comment_id}
-                                            style={{
-                                                backgroundColor: message.comment_id === selectedMessage.comment_id ? 'yellow' :
-                                                    message.deleted ? '#C0C0C0' :
-                                                    message.saved ? '#F5F5F5' :
-                                                    message.role === 'user' ? '#FFB6C1' :
-                                                    message.role === 'assistant' ? '#B2DFDB' :
-                                                    'purple'
-                                            }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                checkChangeSelectedMessadeId(message, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged);
-                                            }}
-                                        >
-                                            {message.deleted === true && <DeletedIcon />}
-                                            {message.deleted !== true && message.saved === true && <SavedIcon />}
-                                            {message.comment_id} - {message.role} - {message.short}
-                                        </Ticket>
-                                    )
-                                })}
-                            </ul>
-                        )}
-                    </Ticket>
-                ))}
+            {listTickets.map((ticket, ticketidx) => (
+                <Ticket
+                    style={{ backgroundColor: ticketidx % 2 === 0 ? '#f5f5f5' : '#e0e0e0' }}
+                    key={ticket.id}
+                    // onClick={() => handleTicketClick(ticket.id)}
+                >
+                    {ticket.id} - {ticket.subject}
+                    {(
+                        <ul>
+                            {ticket.messages.map((message, messageidx) => {
+                                message.ticketid = ticket.id;
+                                if (!message.comment_id) {
+                                    return null; // Skip the element if comment_id does not exist
+                                }
+                                return (
+                                    <Ticket 
+                                        key={message.comment_id}
+                                        style={{
+                                            backgroundColor: message.comment_id === selectedMessage.comment_id ? 'yellow' :
+                                                message.deleted ? '#C0C0C0' :
+                                                message.saved ? '#F5F5F5' :
+                                                message.role === 'user' ? '#FFB6C1' :
+                                                message.role === 'assistant' ? '#B2DFDB' :
+                                                'purple'
+                                        }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            checkChangeSelectedMessadeId(message, setSelectedMessage, setSelectedTicketId, textHasChanged, setTextHasChanged);
+                                        }}
+                                    >
+                                        {message.deleted === true && <DeletedIcon />}
+                                        {message.deleted !== true && message.saved === true && <SavedIcon />}
+                                        {message.comment_id} - {message.role} - {message.short}
+                                    </Ticket>
+                                )
+                            })}
+                        </ul>
+                    )}
+                </Ticket>
+            ))}
             </ListConversations>
         );
 };
@@ -301,6 +339,7 @@ const MarkdownEditor = () => {
                 <Toolbar>
                     <ToolbarButton>Info:</ToolbarButton>
                 </Toolbar>
+                    <div>Filter enabled: {filter_tickets_saved ? "True" : "False"}</div>
                     <div>TicketId: {selectedTicketId}</div>
                     <div>MessageId: {selectedMessage.comment_id}</div>
                     {listTickets.map((ticket) => (
@@ -325,12 +364,22 @@ const MarkdownEditor = () => {
                 </PlaceHolder>
                 <PlaceHolder>
                     <Toolbar>
+                        <ToolbarButton onClick={() => handleToolbarClick('SaveNext')}>Save & Next</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Next')}>Next</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Save')}>Save</ToolbarButton>
+                        <ToolbarButton onClick={() => handleToolbarClick('rmpol')}>RM politesse</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Delete')}>Delete</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Code')}>Code</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Restore')}>Restore</ToolbarButton>
                         <ToolbarButton onClick={() => handleToolbarClick('Next')}>Next</ToolbarButton>
+                        {/* <ToolbarButton>
+                            <input
+                                type="checkbox"
+                                checked={filter_tickets_saved}
+                                onChange={(e) => setFilter_tickets_saved(e.target.checked)}
+                            />
+                            Toggle
+                        </ToolbarButton> */}
                     </Toolbar>
                     <TextArea
                         id="#markdown"
