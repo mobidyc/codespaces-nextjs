@@ -36,3 +36,4 @@ yarn-error.log*
 next-env.d.ts
 resources/01.2-zendesk_tickets-markdown.json
 resources/save_dir/*
+resources/merged.json
