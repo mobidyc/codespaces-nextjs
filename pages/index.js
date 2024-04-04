@@ -194,11 +194,13 @@ const MarkdownEditor = () => {
             case 'rmpol':
                 // remove any character after the string "Regards" from markdown
                 var tmp_markdown = markdown;
-                const idx = tmp_markdown.indexOf('Regards');
+                var idx = tmp_markdown.toLowerCase().indexOf('regards');
                 if (idx !== -1) {
                     tmp_markdown = tmp_markdown.substring(0, idx + 7);
                     setTextHasChanged(true);
                 }
+      
+
                 //  from markdown, on the first line, remove any character between "hi" and ","
                 const idx2 = tmp_markdown.toLowerCase().indexOf('hi');
                 if (idx2 !== -1) {
